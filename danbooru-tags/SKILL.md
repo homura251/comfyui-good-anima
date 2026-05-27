@@ -61,21 +61,23 @@ cd "$DANBOORU_TAGS_DIR"
 .\bin\danbooru-tags.exe --batch-workers 8 --batch-file .\batch_tags.json --for-prompt --json --compact
 ```
 
-> **⚠ PowerShell 5.x BOM 陷阱**：Windows PowerShell 5.1 中 `Set-Content -Encoding utf8` 会写入 UTF-8 BOM（`0xEF 0xBB 0xBF`），导致 Rust CLI 的 JSON 解析器报 `expected value at line 1 column 1`。此时须换用无 BOM 写法：
+> **Shell 版本自适应**：`Set-Content -Encoding utf8` 在 pwsh 7.x 下默认无 BOM；在 PowerShell 5.1 下会写入 UTF-8 BOM（`0xEF 0xBB 0xBF`），导致 Rust CLI 的 JSON 解析器报 `expected value at line 1 column 1`。**每次写 batch JSON 前必须先检测当前 Shell 版本**，按实际环境选择路径：
 >
 > ```powershell
-> $batchJson = @'
-> {
->   "queries": [...]
+> # 拼接 JSON 后，按 Shell 版本选择写入方式
+> if ($PSVersionTable.PSVersion.Major -ge 7) {
+>   # pwsh 7.x：Set-Content 默认无 BOM
+>   $batchJson | Set-Content -LiteralPath .\batch_tags.json -Encoding utf8
+> } else {
+>   # PowerShell 5.x：必须使用无 BOM UTF-8
+>   $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+>   [System.IO.File]::WriteAllText("$pwd\batch_tags.json", $batchJson, $utf8NoBom)
 > }
-> '@
-> $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-> [System.IO.File]::WriteAllText("$pwd\batch_tags.json", $batchJson, $utf8NoBom)
 > ```
->
-> pwsh 7.x（`pwsh.exe`）不受此影响，可继续使用 `Set-Content -Encoding utf8`。
 
-````
+```
+
+```
 
 批量输出按 `results.<id>.confirmed_tags` / `results.<id>.candidate_tags` 读取，`missing` 表示查不到，直接交给 `nltags`。不要把完整 JSON 复述给用户。
 
@@ -85,10 +87,15 @@ cd "$DANBOORU_TAGS_DIR"
 {
   "queries": [
     { "id": "artist", "group": "artist", "keyword": "rella", "limit": 5 },
-    { "id": "character", "group": "character", "keyword": "hakurei reimu", "limit": 5 }
+    {
+      "id": "character",
+      "group": "character",
+      "keyword": "hakurei reimu",
+      "limit": 5
+    }
   ]
 }
-````
+```
 
 默认只使用 Rust CLI。Rust CLI 不存在、启动失败、非 0、输出非 JSON 或缺少 `found / confirmed_tags / candidate_tags` 时，停止并报告错误，不切换旧检索实现。
 
