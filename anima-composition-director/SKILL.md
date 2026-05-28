@@ -23,6 +23,8 @@ Do not write literary mood paragraphs. Describe the picture layout.
 
 Choose after the semantic draft is clear. If the user gave a size, keep it and adapt composition.
 
+规则：用户允许某分辨率 ≠ 所有图都用该分辨率。每张图按下表按构图语义独立选择画布，禁止一刀切复用。
+
 | Canvas          | Use when                                           |
 | --------------- | -------------------------------------------------- |
 | `1536x1024` 3:2 | 多人互动、横向动作、宽景背景、左右空间关系         |

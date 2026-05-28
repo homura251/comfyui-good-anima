@@ -38,6 +38,8 @@ description: Use for Anima / ComfyUI-AnimaTool image generation. Route Anima gen
 
 不要一开始套默认 `1024x1536`。先按 `anima-composition-director` 的 canvas fit 固定最终 `width/height`，再把主体位置、景别、留白方向、背景展开方向回写到 `nltags`。用户明确给尺寸时必须使用，但要检查构图是否适配。
 
+规则：用户允许使用某分辨率仅表示可用，不是默认全部使用。多图时每张图按各自的构图复杂度独立选择画布，禁止批量套用同一分辨率。
+
 当前只按 Anima base1.0 正式版处理；默认初始生成不主动推荐任一边超过 1536。不要默认改用 `1920x1080`，更大输出交给放大节点。`1536x1536` 只用于高信息量中心构图；简单头像、表情图、普通半身图使用 `1024x1024`。
 
 ### 质量步数推断
@@ -288,4 +290,3 @@ Anima 官方支持 prompt weighting；官方示例为 `(chibi:2)`。默认不要
 - 默认使用 `local/anima-txt2img-aesthetic-lora`；`local/anima-txt2img-aesthetic-lora-artist-mixer` 只在用户明确要求画师串/多画师融合时使用。
 - `local/anima-txt2img-base` 只在用户明确指定基础版、禁用 LoRA、对比测试或排查问题时使用。
 - 默认已使用 aesthetic-lora 工作流；不要把 LoRA 名写进 prompt。
-
