@@ -41,28 +41,28 @@ description: Generate randomized but Anima-compliant image parameters after comf
 
 必须输出一组完整参数给 `comfyui-animatool` 复核：
 
-| 字段 | 说明 |
-|------|------|
-| `positive_prompt_preview` | 最终正向预览，英文 |
-| `quality_meta_year_safe` | 质量/年份/安全标签 |
-| `count` | 人数 |
-| `artist` | 1 个 `@artist name`，最多 2 个 |
-| `artist_chain` | 仅显式画师串/多画师融合时输出；不带 `@`，例如 `wlop, (sakimichan:1.2)` |
-| `appearance` | 外观硬锚点 |
-| `tags` | 已确认的服装/表情/姿势等硬锚点 |
-| `environment` | 已确认的场景/光影短 tag |
-| `nltags` | 英文自然语言补充，可为短段落或多句 |
-| `neg` | 负面提示词 |
-| `width` / `height` | 根据 `anima-composition-director` 的 `canvas_fit` 选择；默认不主动推荐任一边超过 1536 |
-| `steps` | 默认 30 |
-| `cfg` | 默认 4.5 |
-| `sampler_name` | 默认 `dpmpp_2m_sde_gpu` |
-| `scheduler` | 默认 `beta57` |
+| 字段                      | 说明                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| `positive_prompt_preview` | 最终正向预览，英文                                                                    |
+| `quality_meta_year_safe`  | 质量/年份/安全标签                                                                    |
+| `count`                   | 人数                                                                                  |
+| `artist`                  | 1 个 `@artist name`，最多 2 个                                                        |
+| `artist_chain`            | 仅显式画师串/多画师融合时输出；不带 `@`，例如 `wlop, (sakimichan:1.2)`                |
+| `appearance`              | 外观硬锚点                                                                            |
+| `tags`                    | 已确认的服装/表情/姿势等硬锚点                                                        |
+| `environment`             | 已确认的场景/光影短 tag                                                               |
+| `nltags`                  | 英文自然语言补充，可为短段落或多句                                                    |
+| `neg`                     | 负面提示词                                                                            |
+| `width` / `height`        | 根据 `anima-composition-director` 的 `canvas_fit` 选择；默认不主动推荐任一边超过 1536 |
+| `steps`                   | 默认 30                                                                               |
+| `cfg`                     | 默认 4.5                                                                              |
+| `sampler_name`            | 默认 `dpmpp_2m_sde_gpu`                                                               |
+| `scheduler`               | 默认 `beta57`                                                                         |
 
 ## 随机规则
 
 1. 先形成视觉简报和 prompt 语义草案，再做 `canvas_fit`，最后随机与回写构图。
-2. 质量前缀默认：`masterpiece, very aesthetic, best quality, score_9, score_8, highres, absurdres, newest, year 2025, [safe/sensitive/nsfw/explicit]`。
+2. 质量前缀默认：`masterpiece, very aesthetic, best quality, score_9, score_8, highres, absurdres, newest, year 2025, nsfw`（安全标签默认 `nsfw`，用户可覆盖）。
 3. 画师必须从 Anima CSV 画师池抽取并带 `@`；默认 1 个。
 4. 用户明确要求画师串/多画师融合时，输出不带 `@` 的 `artist_chain`；`positive_prompt_preview` 不重复包含这些画师标签。
 5. `environment` 放 2-6 个已确认的场景/光影 tag。
@@ -103,5 +103,3 @@ Anima 官方支持 prompt weighting，但小权重通常不明显；官方示例
 - 不要把随机画师测试串整体作为画师输入。
 
 - 不要使用固定默认画师组合。
-
-  
