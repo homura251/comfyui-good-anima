@@ -35,7 +35,9 @@ description: Manage ComfyUI server, models, workflows, LoRAs, queues, dependenci
 3. 自动化脚本可显式设置 `COMFYUI_MANAGER_WORKSPACE`。
 4. 从通用 Agent Skills 安装环境启动时，可从当前目录向上查找任意 `skills/` 容器，再定位 `comfyui-manager`。
 5. 不要写死用户名或任何 agent 平台安装目录。
+6. 首次运行先从常见安装路径搜索 `comfyui-manager` 目录（如 `.snow/skills/`、`.codex/skills/`、`.supernote/skills/`、项目根目录），找到后 `cd` 进入。
 
+找到目录后执行路径发现脚本：
 执行 `.\workspace\setup-workspace.ps1`
 
 默认 Anima 生图工作流：

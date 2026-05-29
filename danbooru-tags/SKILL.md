@@ -35,10 +35,12 @@ description: Search and validate Anima-compatible Danbooru tags, artists, charac
 3. 自动化脚本可显式设置环境变量 `DANBOORU_TAGS_DIR`。
 4. 从通用 Agent Skills 安装环境启动时，可从当前目录向上查找任意 `skills/` 容器，再定位 `danbooru-tags`。
 5. 不要写死用户名或任何 agent 平台安装目录。
+6. 首次运行先从常见安装路径搜索 `danbooru-tags` 目录（如 `.snow/skills/`、`.codex/skills/`、`.supernote/skills/`、项目根目录），找到后 `cd` 进入。
 
+找到目录后执行路径发现脚本：
 执行 `.\bin\setup-dir.ps1`
 
-```
+````
 
 生图前多锚点检索优先用批量入口。Shell 下复杂 batch JSON 必须写入文件，避免内联 JSON 被拆坏：
 
@@ -53,7 +55,7 @@ description: Search and validate Anima-compatible Danbooru tags, artists, charac
 }
 '@ | Set-Content -LiteralPath .\batch_tags.json -Encoding utf8
 .\bin\danbooru-tags.exe --batch-workers 8 --batch-file .\batch_tags.json --for-prompt --json --compact
-```
+````
 
 PowerShell 7.x 使用 `Set-Content -Encoding utf8`；只能确认 Windows PowerShell 5.x 时，使用 `[System.IO.File]::WriteAllText(..., [System.Text.UTF8Encoding]::new($false))` 写入无 BOM UTF-8。
 
