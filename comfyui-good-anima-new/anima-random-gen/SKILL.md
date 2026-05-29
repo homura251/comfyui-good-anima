@@ -7,8 +7,6 @@ description: Generate randomized but Anima-compliant image parameters only after
 
 本 skill 只在 `comfyui-animatool` 已确认“随机图 / roll 图 / 抽卡并生图”意图后使用。它产出参数，不直接生图。
 
-本文件包含核心随机生成规则。references/ 提供随机池构建、脚本字段和扩展配置。
-
 ## 默认职责
 
 - 产出 Anima 兼容的随机图参数（画师、prompt、画布、采样参数）。
@@ -39,11 +37,11 @@ description: Generate randomized but Anima-compliant image parameters only after
 3. 按兼容性筛选候选，不复述完整候选 JSON。
 4. 输出完整参数给 `comfyui-animatool` 复核。
 
-随机图不能只是随机抽 tag。输出必须像一张完整画面的说明，而不是互不相关的标签池采样。
+随机图不能只是随机抽 tag。输出必须形成连贯的画面描述，不得输出互不相关的 tag 列表。
 
 ## 随机前视觉简报
 
-随机前先确定一个小画面，不要先抽一堆互不相关 tag：
+随机前先确定语义草案，不要先抽一堆互不相关 tag：
 
 ```json
 {
@@ -62,7 +60,6 @@ description: Generate randomized but Anima-compliant image parameters only after
 - 单人全身、立绘、手机壁纸：`1024x1536`。
 - 多人互动、宽景、横向动作：`1536x1024`。
 - 高信息量中心构图、复杂服装：`1536x1536`。
-- `nltags` 必须回写主体位置、景别/镜头、光源方向、焦点/景深中的 2-4 句。
 
 ## 随机检索入口
 

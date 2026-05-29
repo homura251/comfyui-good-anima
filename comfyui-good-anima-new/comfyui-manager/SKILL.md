@@ -7,8 +7,6 @@ description: Manage ComfyUI server, models, workflows, queues, logs, dependencie
 
 本 skill 是 ComfyUI 执行和运维层。它不负责 Anima prompt 策略，不自行改写 prompt，不决定随机 tag 或构图。
 
-本文件包含核心执行规则。references/ 提供完整命令大全、排障细节和缓存技术说明。
-
 ## 默认职责
 
 - 执行已经准备好的 workflow args，并返回 `outputs[].local_path`。
@@ -148,8 +146,6 @@ $RUNTIME = if ($env:COMFYUI_MANAGER_RUNTIME_DIR) {
 New-Item -ItemType Directory -Force -Path $RUNTIME | Out-Null
 ```
 
-Runtime 解析优先级：`COMFYUI_MANAGER_RUNTIME_DIR` > `SKILL_RUNTIME_ROOT/comfyui-manager` > `workspace/config.json` 的 `output_dir` 父目录 > workspace 相对 fallback。不要写死平台特定的环境变量名。
-
 `workspace/outputs` 和 `workspace/cache` 可以是指向 `$RUNTIME/outputs`、`$RUNTIME/cache` 的 Windows junction，用于 GUI 客户端直接读取本地文件路径或 base64。不要在 workspace 内复制第二份图片；需要本地可访问路径时优先使用这些 junction。
 
 ## 默认工作流
@@ -188,15 +184,11 @@ node ./run_workflow_args.js run local/anima-txt2img-aesthetic-lora-artist-mixer 
 Pop-Location
 ```
 
-批量、串行或并行任务不要用多个 `run` 卡住终端；按 `references/anima-execution.md` 使用 `submit`、记录 args 和 `prompt_id`，最后用 `status` 汇总。
-
 执行成功后读取 `outputs[].local_path`。如果失败：
 
-- `connection refused`、`timeout`、`8181`、`8188`、`Cannot connect`、`Failed to connect`：判定为 ComfyUI 未启动或端口不一致，不要枚举 workflow/schema。
+- `connection refused`、`timeout`、`8181`、`8188`、`Cannot connect`、`Failed to connect`：判定为 ComfyUI 连接失败（见 §故障排查）。
 - `400`、`Bad Request`、`invalid prompt`、`Prompt outputs failed validation`：读取 `references/troubleshooting.md`。
 - 其他运维需求：读取 `references/operations.md`。
-
-执行成功后必须按 `references/anima-execution.md` 的本地缓存规则处理；批量或 `submit` 脚本必须记录 `args` 文件和 `prompt_id`，不能只入队后结束。
 
 ## 常用命令速查
 

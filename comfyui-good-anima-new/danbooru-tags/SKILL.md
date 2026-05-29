@@ -7,8 +7,6 @@ description: Search and validate Anima-compatible Danbooru tags, artists, charac
 
 本 skill 是 Anima / Danbooru 锚点检索层。它只返回检索结果，不决定是否生图、不组装完整 prompt、不执行 ComfyUI。
 
-本文件包含核心执行规则。references/ 提供维护指南、排障细节和扩展示例。
-
 ## 默认职责
 
 - 确认 Anima 可用的 Danbooru 角色、作品、画师和视觉 hard anchors。
@@ -41,7 +39,7 @@ description: Search and validate Anima-compatible Danbooru tags, artists, charac
 - 其他分类不带 `@`，不能当画师标签。
 - `artists_extended.txt` 只在明确 `--extended` 或维护场景使用，不参与默认生图回填。
 - 角色查询只返回角色 tag、aliases 和 count；不要把 aliases 当发色、服装或道具描述。
-- `confirmed_tags` 可回填但仍需按意图筛选；`candidate_tags` 不能整组塞进 prompt。
+- `confirmed_tags` 可回填但仍需按意图筛选。
 - 查不到的复合概念交给 `nltags`，不要编造 Danbooru tag。
 - 指定画风、抽取画风、角色、服装、姿势、场景、光影或 tag 锚点用于生图前，必须先经本检索器确认；确认不了的内容只能进入 `nltags` 或向用户说明。
 
@@ -67,7 +65,7 @@ description: Search and validate Anima-compatible Danbooru tags, artists, charac
 
 画师标签只来自 CSV 原始 artist 分类，必须保留 `@`。其他分类不带 `@`，不能当画师标签。
 
-精细 group 是优先过滤，不是绝对真理；部分 Danbooru 服装、构图、属性词实际属于 `general`。查询常见视觉概念时，一次 batch 内放"主词 + 英文/罗马音别名 + 部件拆解"。中文、日文俗称先翻译/转写成 Danbooru 常用英文或罗马音；对可能被 group 白名单漏掉的概念，同一 batch 可同时放 `group=...` 与 `category=general` 变体。
+精细 group 是优先过滤，不是绝对真理。一次 batch 同时放 `group=...` 与 `category=general` 变体。中文/日文俗称先转写为英文/罗马音。
 
 ## 执行入口
 
@@ -144,8 +142,6 @@ $DANBOORU_RUNTIME_DIR = if ($env:DANBOORU_TAGS_RUNTIME_DIR) {
 New-Item -ItemType Directory -Force -Path $DANBOORU_RUNTIME_DIR | Out-Null
 ```
 
-Runtime 解析优先级：`DANBOORU_TAGS_RUNTIME_DIR` > `SKILL_RUNTIME_ROOT/danbooru-tags` > 向上查找已存在的 `runtime/` > 当前安装位置的相对 fallback。不要写死平台特定的环境变量名。
-
 ## 常用命令
 
 单项查询：
@@ -193,7 +189,7 @@ if ($PSVersionTable.PSVersion.Major -ge 7) {
 
 - `--batch-workers N` 控制批量查询并发，建议 4-8；过高会增加 SQLite 连接竞争。
 - `--batch-file` 必须是 JSON 对象，包含 `queries` 数组；每条 query 必须有唯一 `id`。
-- 提升准确度时，**不要多次调用 CLI**；在同一个 `queries` 里放同一锚点的多个变体。
+- 提升准确度时，不要多次调用 CLI；在同一个 `queries` 里放同一锚点的多个变体。
 - 普通生图最多 4 个语义锚点；每个锚点最多 2-3 个变体；总 query 控制在 12-16 内。
 - `--compact` 结果只读 JSON 并筛选，不向用户复述完整检索过程。
 - group 精确过滤无命中时返回的 general 候选只作为 `candidate_tags`。
@@ -206,7 +202,7 @@ if ($PSVersionTable.PSVersion.Major -ge 7) {
 2. 服装/配饰/动作/场景/光影先查可确认 tag，再筛选。
 3. 复合短语拆成可确认锚点，例如 `fur-trimmed hooded cape` 拆成 `fur trim`、`hood`、`cape`。
 4. 查不到完整组合时不要编 tag，交给 `nltags`。
-5. **不要把 `candidate_tags` 整组塞进 prompt**。
+5. 不要把 `candidate_tags` 整组塞进 prompt。
 6. 不要堆 30+ 个松散 tag；少量硬锚点更稳。
 
 ## 随机规则
