@@ -13,6 +13,15 @@ description: Manage ComfyUI server, models, workflows, LoRAs, queues, dependenci
 - 本 skill 只执行已确定 args，并管理服务器、模型、workflow、队列、依赖、日志和 history。
 - 管理/运维/查询/非 Anima workflow 执行任务直接走本 skill。
 
+## 读取导航
+
+| 需要处理的事                     | 读取                                       |
+| -------------------------------- | ------------------------------------------ |
+| 执行 Anima 生图（已组装好 args） | 跳到"常规生图最短路径"                     |
+| 管理服务器/模型/workflow/队列    | 跳到"触发条件"                             |
+| 排障（400/连接失败/模型路径）    | 跳到"400 Bad Request 诊断"或"环境适配检查" |
+| 批量提交脚本模板                 | 跳到"Anima 批量生图规则"                   |
+
 ## CLI 工作区
 
 所有 `comfyui-skill` 命令必须从解析出的 `WORKSPACE` 目录运行。`WORKSPACE` 是包含 `config.json` 和 `data/` 的 `comfyui-manager/workspace` 目录。

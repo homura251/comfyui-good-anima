@@ -7,6 +7,10 @@ description: Use for Anima / ComfyUI-AnimaTool image generation. Route Anima gen
 
 本 skill 只服务 `ComfyUI-AnimaTool` 的 Anima 生图策略
 
+## 默认职责
+
+本 skill 是 Anima 生图策略入口：判断分支、组织视觉决策、校验 hard anchors、组装 prompt。它不直接维护 ComfyUI 服务器，也不执行工作流。
+
 ## 触发与分支
 
 有 Anima 生图意图时触发：生成图、画图、出图、reroll、roll 图、抽卡、随机图、指定 Anima/画师风格并要求生成。
@@ -25,6 +29,15 @@ description: Use for Anima / ComfyUI-AnimaTool image generation. Route Anima gen
 4. 随机角色/服装/姿势/场景抽卡 → 按 `danbooru-tags` 的候选预算选择 `N`，用 `--random N --group <group> --json` 抽候选 → 按兼容性筛选 → 组装参数。
 5. 明确画师串、多画师融合、artist mixer 或多画师权重混合（用户给多个画师名/权重/融合比例）→ 走 `local/anima-txt2img-aesthetic-lora-artist-mixer`，把画师写入 `artist_chain`，不要把多画师堆进普通 prompt。
 6. 明确"全 Danbooru tag / 纯 tag / 不加自然语言"（用户说"只写 tag/纯 tag/不要自然语言"）→ 只写 tag，不写 `nltags`
+
+## 读取导航
+
+| 需要处理的事                | 读取                                 |
+| --------------------------- | ------------------------------------ |
+| 普通 Anima 生图（默认链路） | 继续读"生图前视觉简报"               |
+| 随机图 / roll / 抽卡        | 跳到"触发与分支"第 2、3 条           |
+| 多画师融合 / Artist Mixer   | 跳到"触发与分支"第 4 条 + "画师字段" |
+| 纯 tag / 不加自然语言       | 跳到"触发与分支"第 5 条              |
 
 ## 生图前视觉简报
 

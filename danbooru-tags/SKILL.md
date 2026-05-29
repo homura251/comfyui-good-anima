@@ -13,6 +13,15 @@ description: Search and validate Anima-compatible Danbooru tags, artists, charac
 - 是否生图、如何组 prompt、如何交接执行都属于 `comfyui-animatool`；本 skill 只返回检索结果。
 - 角色查询只返回角色 tag、aliases 和 count，不返回外观设定；不要把 aliases 当发色、服装或道具描述。
 
+## 读取导航
+
+| 需要处理的事         | 读取                            |
+| -------------------- | ------------------------------- |
+| 生图前批量校验锚点   | "执行入口" → "批量并发与多变体" |
+| 查单个 tag/画师/角色 | "常用命令"                      |
+| 随机画师/随机候选    | "随机画师规则"                  |
+| 维护索引/排障        | "SQLite / Rust"                 |
+
 ## 执行入口
 
 默认优先 Rust CLI。必须从当前宿主的本 skill 目录执行，不要从其他 skill 目录找 `bin`。

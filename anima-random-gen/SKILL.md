@@ -5,12 +5,25 @@ description: Generate randomized but Anima-compliant image parameters after comf
 
 # Anima 随机图生成器
 
-本 skill 只在 `comfyui-animatool` 已确认“随机图 / roll 图 / 抽卡并生图”意图后使用。它产出参数，不直接生图。
+本 skill 只在 `comfyui-animatool` 已确认"随机图 / roll 图 / 抽卡并生图"意图后使用。它产出参数，不直接生图。
+
+## 默认职责
+
+本 skill 只在 `comfyui-animatool` 已确认随机生图意图后使用。它产出随机参数（画师、prompt、画布、采样参数），不直接生图。
 
 ## 权威边界
 
 - 画师池与 tag 锚点必须经过 `danbooru-tags` Rust CLI / Anima CSV 索引。
 - 本 skill 只产出随机参数；执行交给 `comfyui-manager`。
+
+## 读取导航
+
+| 需要处理的事   | 读取                   |
+| -------------- | ---------------------- |
+| 生成随机图参数 | 继续读"随机前视觉简报" |
+| 输出字段说明   | 跳到"输出字段"         |
+| 随机规则与权重 | 跳到"随机规则"         |
+| 调用后检查清单 | 跳到"调用后检查"       |
 
 ## 随机检索入口
 
