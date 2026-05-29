@@ -8,6 +8,7 @@ const defaultWorkflowId = 'local/anima-txt2img-aesthetic-lora';
 const workflowId = argValue('--workflow-id', defaultWorkflowId);
 const workflowName = workflowNameFromId(workflowId);
 const historyDir = path.join(runtimeRoot, 'history', workflowName);
+const manifestPath = argValue('--manifest');
 
 function resolveRuntimeRoot() {
   if (process.env.COMFYUI_MANAGER_RUNTIME_DIR) {
@@ -85,10 +86,14 @@ function mkdirp(dir) {
 
 function readJson(file) {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    return JSON.parse(stripBom(fs.readFileSync(file, 'utf8')));
   } catch {
     return null;
   }
+}
+
+function stripBom(text) {
+  return text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
 }
 
 function writeJson(file, value) {
@@ -141,6 +146,16 @@ function normalizeStatus(status) {
   return ['success', 'completed'].includes(String(status || '').toLowerCase()) ? 'completed' : String(status || '');
 }
 
+function promptStatus(promptId) {
+  const raw = execFileSync('comfyui-skill', ['--json', '--dir', workspace, 'status', promptId], {
+    cwd: workspace,
+    encoding: 'utf8',
+    env: process.env,
+    timeout: 120000,
+  });
+  return JSON.parse(stripBom(raw));
+}
+
 function previewFromLocalOutput(output) {
   if (!output || !output.filename) return null;
   return {
@@ -171,6 +186,50 @@ function jobsFromLocalHistory() {
     });
 }
 
+function jobsFromManifest(file) {
+  const manifest = readJson(path.resolve(workspace, file));
+  const items = Array.isArray(manifest) ? manifest : [];
+  return items.flatMap((item) => {
+    const promptId = item && item.prompt_id;
+    if (!promptId) {
+      return [{ id: '', status: 'failed', preview_output: null, reason: 'missing prompt_id' }];
+    }
+    let rawStatus;
+    try {
+      rawStatus = promptStatus(promptId);
+    } catch (error) {
+      return [{
+        id: promptId,
+        prompt_id: promptId,
+        status: 'failed',
+        preview_output: null,
+        reason: error && error.message ? error.message : String(error),
+      }];
+    }
+    const status = rawStatus && rawStatus.data ? rawStatus.data : rawStatus;
+    const outputs = status && Array.isArray(status.outputs)
+      ? status.outputs.filter((entry) => entry && entry.media_type === 'image' && entry.filename)
+      : null;
+    if (!outputs || outputs.length === 0) {
+      return [{
+        id: promptId,
+        prompt_id: promptId,
+        status: normalizeStatus(status && status.status),
+        preview_output: null,
+        reason: 'missing image outputs',
+      }];
+    }
+    return outputs.map((output, index) => ({
+      id: outputs.length === 1 ? promptId : `${promptId}-${index + 1}`,
+      prompt_id: promptId,
+      status: normalizeStatus(status && status.status),
+      preview_output: previewFromLocalOutput(output),
+      args_file: item.args_file || '',
+      workflow_id: item.workflow_id || workflowId,
+    }));
+  });
+}
+
 function cacheOne(job, outputRoot) {
   const preview = job.preview_output;
   if (!preview || !preview.filename) {
@@ -195,15 +254,16 @@ function cacheOne(job, outputRoot) {
 
   const localHistoryPath = job.local_history_path || path.join(historyDir, `${job.id}.json`);
   const localHistory = readJson(localHistoryPath);
-  const args = localHistory && localHistory.args ? localHistory.args : {};
+  const manifestArgs = job.args_file ? readJson(path.resolve(workspace, job.args_file)) : null;
+  const args = manifestArgs || (localHistory && localHistory.args) || {};
   const stem = path.basename(preview.filename, path.extname(preview.filename));
   const argsPath = path.join(cacheDir, `${stem}.args.json`);
   const manifestPath = path.join(cacheDir, `${stem}.manifest.json`);
 
   writeJson(argsPath, args);
   writeJson(manifestPath, {
-    workflow_id: workflowId,
-    prompt_id: job.id,
+    workflow_id: job.workflow_id || workflowId,
+    prompt_id: job.prompt_id || job.id,
     status: job.status,
     source_local_path: source,
     cache_local_path: imageCachePath,
@@ -221,7 +281,7 @@ function cacheOne(job, outputRoot) {
 function main() {
   const limit = Number.parseInt(argValue('--limit', '50'), 10) || 50;
   const outputRoot = findOutputRoot();
-  let jobs = jobsFromLocalHistory()
+  let jobs = manifestPath ? jobsFromManifest(manifestPath) : jobsFromLocalHistory()
     .filter((job) => job.status === 'completed')
     .sort((a, b) => {
       const aTime = fs.statSync(a.local_history_path).mtimeMs;
@@ -230,7 +290,7 @@ function main() {
     })
     .slice(0, limit);
 
-  if (jobs.length === 0) {
+  if (!manifestPath && jobs.length === 0) {
     const raw = execFileSync('comfyui-skill', ['history', 'list', workflowId, '--server', '--limit', String(limit)], {
       cwd: workspace,
       encoding: 'utf8',
@@ -239,12 +299,27 @@ function main() {
     const data = JSON.parse(raw);
     jobs = Array.isArray(data.jobs) ? data.jobs.filter((job) => job.status === 'completed') : [];
   }
-  const results = jobs.map((job) => cacheOne(job, outputRoot));
+  const results = jobs.map((job) => {
+    if (job.status !== 'completed') {
+      return { id: job.id, prompt_id: job.prompt_id || job.id, cached: false, reason: job.reason || `not completed: ${job.status}` };
+    }
+    try {
+      return cacheOne(job, outputRoot);
+    } catch (error) {
+      return {
+        id: job.id,
+        prompt_id: job.prompt_id || job.id,
+        cached: false,
+        reason: error && error.message ? error.message : String(error),
+      };
+    }
+  });
+  const completedSeen = jobs.filter((job) => job.status === 'completed').length;
   console.log(JSON.stringify({
     workflow_id: workflowId,
     workflow_name: workflowName,
     output_root: outputRoot,
-    total_completed_seen: jobs.length,
+    total_completed_seen: completedSeen,
     cached: results.filter((item) => item.cached).length,
     failed: results.filter((item) => !item.cached).length,
     results,

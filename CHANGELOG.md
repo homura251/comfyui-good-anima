@@ -10,6 +10,7 @@
 - `comfyui-manager` 默认从当前 `workspace` 目录运行，删除 `workspace/setup-workspace.ps1` 路径发现脚本。
 - `run_workflow_args.js` 兼容 args JSON 的 UTF-8 BOM，并增加 `validate` 模式；批量提交示例改为先验证、再用非阻塞 `submit` 入队并保存 job manifest。
 - 补充多人图属性归属句式、POV/first-person 构图角度，以及批量 manifest 的等待完成与缓存后处理模板。
+- `cache_anima_outputs.js` 增加 `--manifest` 精确缓存模式，批量后处理只缓存本批 `prompt_id`，支持同一 job 多图并隔离单项缓存失败。
 
 ## v0.3.0 — 技能集群全面质量审查修复 (2026-05-29)
 
