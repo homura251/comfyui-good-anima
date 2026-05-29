@@ -167,6 +167,7 @@ Set-Location -LiteralPath "<当前 danbooru-tags skill 目录>"
 - 查询常见视觉概念时，一次 batch 内放“主词 + 英文/罗马音别名 + 部件拆解”，不要失败后反复单查。
 - 中文、日文俗称先翻译/转写成 Danbooru 常用英文或罗马音，再查询；中文原词只能作为辅助变体。
 - 对可能被 group 白名单漏掉的概念，同一 batch 可同时放 `group=...` 与 `category=general` 变体。
+- `limit 5` 是精确 artist / character / series 查询默认值；模糊服装、动作、场景或俗称候选可用 `limit 10-20`，最终仍只筛少量锚点回填。
 - 普通生图最多 4 个语义锚点；每个锚点最多 2–3 个变体；总 query 控制在 12–16 内。
 - group 精确过滤无命中时返回的 general 候选只作为 `candidate_tags`；不能当作硬 confirmed 直接批量回填。
 

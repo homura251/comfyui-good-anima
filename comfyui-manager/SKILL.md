@@ -1,6 +1,6 @@
 ---
 name: comfyui-manager
-description: Manage ComfyUI server, models, workflows, LoRAs, queues, dependencies and CLI workflow execution via comfyui-skill. Execute imported Anima workflows and return local_path results.
+description: Manage ComfyUI server, models, workflows, LoRAs, queues, dependencies and CLI workflow execution via comfyui-skill. Execute imported Anima workflows: run returns local_path results, submit returns prompt_id and manifest.
 ---
 
 # ComfyUI Manager — CLI Skill
@@ -10,7 +10,7 @@ description: Manage ComfyUI server, models, workflows, LoRAs, queues, dependenci
 使用原则：
 
 - Anima prompt、tag、画布、steps、批量意图由 `comfyui-animatool` 决定。
-- 本 skill 只执行已确定 args，并管理服务器、模型、workflow、队列、依赖、日志和 history。
+- 本 skill 只执行已确定 args，并管理服务器、模型、workflow、队列、依赖、日志和 history。`run` 返回 `outputs[].local_path`；`submit` 返回 `prompt_id` 和 manifest。
 - 管理/运维/查询/非 Anima workflow 执行任务直接走本 skill。
 
 ## 读取导航
@@ -262,7 +262,7 @@ args 文件格式按“工作流执行参数格式”执行：必须是纯参数
 - 默认 workflow：`local/anima-txt2img-aesthetic-lora`
 - 画师串 workflow：`local/anima-txt2img-aesthetic-lora-artist-mixer`，仅在 args 已包含 `artist_chain` 且需求明确为融合/混合/artist mixer 时使用；多个 job 分别使用不同 `@artist` 时仍使用默认 workflow
 - 基础 workflow：`local/anima-txt2img-base`，仅在用户明确要求基础版、禁用 LoRA、对比测试或排障时使用
-- 执行结果读取 `outputs[].local_path`
+- `run` 执行结果读取 `outputs[].local_path`；`submit` 只返回 `prompt_id` 和 manifest
 
 节点参数护栏：
 
@@ -272,9 +272,9 @@ args 文件格式按“工作流执行参数格式”执行：必须是纯参数
 
 Anima 输出命名规则：`filename_prefix` 必须使用 `anima/%year%-%month%-%day%/<model_tag>-<artist_tag>-<character_tag>`。`model_tag` 来自 UNet 模型名，去掉扩展名后转安全名，例如 `anima-base-v1.0.safetensors` -> `anima_base_v1_0`；默认工作流的 `artist_tag` 来自 prompt 中的单画师标签，去掉 `@`；Artist Mixer 工作流的 `artist_tag` 来自 `artist_chain`，按主次取 1–3 个画师名拼接。`character_tag` 来自主要角色标签。三者都转小写，并把空格或特殊符号替换成 `_`。ComfyUI 会自动按此前缀保存到 `output/anima/YYYY-MM-DD/`，并追加 `_00001_`、`_00002_` 这样的顺序号；不要手写序号。
 
-Anima 本地缓存规则：每次成功执行 Anima 生图后，除了返回 `outputs[].local_path` 指向的 ComfyUI 正式输出，还必须在 `$RUNTIME/cache/anima/YYYY-MM-DD/` 保留一份本地缓存，供远程 Claw/云端客户端复用，减少重复下载与重复调用。缓存日期必须优先来自输出的 `subfolder` 或 `source_local_path` 中的 `anima/YYYY-MM-DD`，其次才使用本地时区日期；不要用 `new Date().toISOString().slice(0, 10)` 生成缓存日期，UTC 会在中国时区凌晨把缓存写进前一天。缓存内容包括：输出图片副本或硬链接、最终 args JSON、manifest JSON。manifest 至少记录 `workflow_id`、`prompt_id`（如有）、`source_local_path`、`cache_local_path`、`args_path`、`filename_prefix`、`created_at`。如果 `outputs[].local_path` 已经位于缓存目录中，不要重复复制，只写 manifest；否则优先硬链接，失败后再按原文件名复制到缓存目录。缓存失败不应伪装生图失败，但必须在结果中说明缓存失败原因。批量补建缓存时传 `cache_anima_outputs.js --manifest <batch_manifest.json>`；非默认 Anima workflow 同时传 `--workflow-id <workflow_id>`。
+Anima 本地缓存规则：`run` 成功返回 `outputs[].local_path` 后，在 `$RUNTIME/cache/anima/YYYY-MM-DD/` 保留缓存副本或 manifest；`submit` 只写 args/`prompt_id`/manifest，等用户要求检查结果或补缓存时再根据 manifest 读取输出并缓存。缓存日期必须优先来自输出的 `subfolder` 或 `source_local_path` 中的 `anima/YYYY-MM-DD`，其次才使用本地时区日期；不要用 `new Date().toISOString().slice(0, 10)` 生成缓存日期，UTC 会在中国时区凌晨把缓存写进前一天。缓存内容包括：输出图片副本或硬链接、最终 args JSON、manifest JSON。manifest 至少记录 `workflow_id`、`prompt_id`（如有）、`source_local_path`、`cache_local_path`、`args_path`、`filename_prefix`、`created_at`。如果 `outputs[].local_path` 已经位于缓存目录中，不要重复复制，只写 manifest；否则优先硬链接，失败后再按原文件名复制到缓存目录。缓存失败不应伪装生图失败，但必须在结果中说明缓存失败原因。批量补建缓存时传 `cache_anima_outputs.js --manifest <batch_manifest.json>`；非默认 Anima workflow 同时传 `--workflow-id <workflow_id>`。
 
-临时提交脚本要求：凡是生成串行/并行提交脚本，都不能只调用 `comfyui-skill submit` 后结束。脚本必须记录每个 job 的 args 文件和 `prompt_id`，等待任务完成或在任务完成后用 `comfyui-skill --json status <prompt_id>` 读取 `outputs[].local_path`，再执行上述本地缓存规则。不要把 ComfyUI 队列返回的 `prompt_id` 传给 `history show`；`history show` 使用的是 workflow id + run_id。若脚本选择只入队不等待完成，必须同时生成一个后处理脚本或清单，说明如何根据 `prompt_id` 补建 `$RUNTIME/cache/anima/YYYY-MM-DD/` 缓存。远程 GUI / Claw / 云端客户端需要展示图片时，优先读取 runtime 缓存；若 `workspace/cache` 是 junction，也可以通过 workspace 路径读取。
+临时提交脚本要求：凡是生成串行/并行提交脚本，都不能只调用 `comfyui-skill submit` 后丢失追踪信息。脚本必须记录每个 job 的 args 文件和 `prompt_id`，写出 manifest 后立即返回清单。不要把 ComfyUI 队列返回的 `prompt_id` 传给 `history show`；`history show` 使用的是 workflow id + run_id。`submit` 默认不等待出图；只有用户明确要求“检查是否完成 / 等结果 / 看图片 / 补缓存”时，才用 `comfyui-skill --json status <prompt_id>` 读取 `outputs[].local_path` 并执行缓存规则。远程 GUI / Claw / 云端客户端需要展示图片时，优先读取 runtime 缓存；若 `workspace/cache` 是 junction，也可以通过 workspace 路径读取。
 
 ### Anima 批量生图规则
 
@@ -291,7 +291,7 @@ Anima 本地缓存规则：每次成功执行 Anima 生图后，除了返回 `ou
 执行约束：
 
 - 禁止把临时脚本、辅助脚本或一次性批量提交脚本作为 Anima 批量策略来源；脚本只能读取/提交已经由 `comfyui-animatool` 确认的 args，不得自行决定 prompt、`steps`、画布、模型或 `filename_prefix`。
-- 多 prompt 批量推荐用 `submit` 非阻塞入队，再用 `status` / `history` 汇总 `local_path`；不要每张都 `run` 后等待完再组下一张。
+- 多 prompt 批量推荐用 `submit` 非阻塞入队，记录 `prompt_id` 和 manifest 后返回；不要每张都 `run` 后等待完再组下一张。
 - 每个 job 的 `filename_prefix` 必须遵循 `anima/%year%-%month%-%day%/<model_tag>-<artist_tag>-<character_tag>`；同一模型、画师、角色同一天多图时交给 ComfyUI 自动追加 `_00001_`、`_00002_` 顺序号。
 - 批量仍使用 `local/anima-txt2img-aesthetic-lora`，除非用户明确指定其他 workflow。
 - 批量任务失败时，先报告失败 job 的序号和错误；不要假装整批成功。
@@ -361,14 +361,14 @@ comfyui-skill --json --dir "$WORKSPACE" queue list
 Pop-Location
 ```
 
-后处理模板：读取 `batch_manifest.json`，等待每个 `prompt_id` 完成，再补建缓存。
+后处理模板：仅在用户明确要求检查结果、等待完成或补建缓存时运行；读取 `batch_manifest.json`，等待每个 `prompt_id` 完成，再补建缓存。
 
 ```powershell
 Push-Location "$WORKSPACE"
 $manifest = Get-Content -LiteralPath (Join-Path $RUNTIME "batch_manifest.json") -Raw | ConvertFrom-Json
 foreach ($job in $manifest) {
   do {
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 10
     $status = comfyui-skill --json --dir "$WORKSPACE" status $job.prompt_id | ConvertFrom-Json
     $state = if ($status.data.status) { $status.data.status } else { $status.status }
   } until ($state -in @("success", "completed", "error", "failed", "cancelled", "canceled"))
