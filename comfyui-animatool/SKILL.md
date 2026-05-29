@@ -36,8 +36,8 @@ description: Use for Anima / ComfyUI-AnimaTool image generation. Route Anima gen
 | --------------------------- | ------------------------------------ |
 | 普通 Anima 生图（默认链路） | 继续读"生图前视觉简报"               |
 | 随机图 / roll / 抽卡        | 跳到"触发与分支"第 2、3 条           |
-| 多画师融合 / Artist Mixer   | 跳到"触发与分支"第 4 条 + "画师字段" |
-| 纯 tag / 不加自然语言       | 跳到"触发与分支"第 5 条              |
+| 多画师融合 / Artist Mixer   | 跳到"触发与分支"第 5 条 + "画师字段" |
+| 纯 tag / 不加自然语言       | 跳到"触发与分支"第 6 条              |
 
 ## 生图前视觉简报
 
@@ -285,7 +285,7 @@ Anima 官方支持 prompt weighting；官方示例为 `(chibi:2)`。默认不要
 
 ```json
 {
-  "prompt_11": "masterpiece, very aesthetic, best quality, score_9, score_8, highres, absurdres, newest, year 2025, safe, 1girl, kanade tachibana, angel beats!, @mignon  # 示例画师，实际使用前必须经 danbooru-tags 校验替换, silver hair, yellow eyes, long hair, school uniform, solo, expressionless, looking at viewer, face focus, classroom, window, depth of field. Place her beside the classroom window, facing the viewer. Use soft daylight from the left side. Keep her face centered, sharp, and undistorted.",
+  "prompt_11": "masterpiece, very aesthetic, best quality, score_9, score_8, highres, absurdres, newest, year 2025, safe, 1girl, kanade tachibana, angel beats!, @mignon, silver hair, yellow eyes, long hair, school uniform, solo, expressionless, looking at viewer, face focus, classroom, window, depth of field. Place her beside the classroom window, facing the viewer. Use soft daylight from the left side. Keep her face centered, sharp, and undistorted.",
   "prompt_12": "worst quality, low quality, score_1, score_2, score_3, blurry, bad anatomy, bad hands, bad feet, extra fingers, missing fingers, distorted face, text, watermark, logo, artist name",
   "width": 1024,
   "height": 1536,

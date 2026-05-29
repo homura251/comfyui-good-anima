@@ -410,7 +410,11 @@ GNU General Public License v3.0
 
 ---
 
-## 更新记录
+---
+
+### v0.3.0 — 技能集群全面质量审查修复 (2026-05-29)
+
+详见 [CHANGELOG.md](./CHANGELOG.md)
 
 ### v0.2.1 - 未发布兼容性与 Skill 去噪修复
 
