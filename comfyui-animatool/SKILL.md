@@ -19,12 +19,12 @@ description: Use for Anima / ComfyUI-AnimaTool image generation. Route Anima gen
 
 生图分支：
 
-1. 普通生图 → `danbooru-tags` 校验硬锚点 → 组装完整 positive/negative → 通过 `comfyui-manager` 执行已导入工作流
-2. 随机图 / roll / 抽卡 → `anima-random-gen` 产出参数 → 校验 → 通过 `comfyui-manager` 执行
-3. 随机画师并生图 → `danbooru-tags --random 5 --for-prompt --json --compact` → 选 1 个画师 → 组装参数 → 通过 `comfyui-manager` 执行
+1. 普通生图（用户可以只用一句话描述画面）→ `danbooru-tags` 校验硬锚点 → 组装完整 positive/negative → 通过 `comfyui-manager` 执行已导入工作流
+2. 随机图 / roll / 抽卡（用户说"随机/roll/抽卡/来一张随机的"）→ `anima-random-gen` 产出参数 → 校验 → 通过 `comfyui-manager` 执行
+3. 随机画师并生图（用户说"随机画师/抽个画师"）→ `danbooru-tags --random 5 --for-prompt --json --compact` → 选 1 个画师 → 组装参数 → 通过 `comfyui-manager` 执行
    随机角色/服装/姿势/场景抽卡 → 按 `danbooru-tags` 的候选预算选择 `N`，用 `--random N --group <group> --json` 抽候选 → 按兼容性筛选 → 组装参数。
-4. 明确画师串、多画师融合、artist mixer 或多画师权重混合 → 走 `local/anima-txt2img-aesthetic-lora-artist-mixer`，把画师写入 `artist_chain`，不要把多画师堆进普通 prompt。
-5. 明确“全 Danbooru tag / 纯 tag / 不加自然语言” → 只写 tag，不写 `nltags`
+4. 明确画师串、多画师融合、artist mixer 或多画师权重混合（用户给多个画师名/权重/融合比例）→ 走 `local/anima-txt2img-aesthetic-lora-artist-mixer`，把画师写入 `artist_chain`，不要把多画师堆进普通 prompt。
+5. 明确"全 Danbooru tag / 纯 tag / 不加自然语言"（用户说"只写 tag/纯 tag/不要自然语言"）→ 只写 tag，不写 `nltags`
 
 ## 生图前视觉简报
 
