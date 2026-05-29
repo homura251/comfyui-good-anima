@@ -26,8 +26,6 @@ $DANBOORU_TAGS_DIR = if ($env:DANBOORU_TAGS_DIR) {
   (Get-Location).Path
 } elseif (Test-DanbooruTagsDir "./danbooru-tags") {
   (Resolve-Path "./danbooru-tags").Path
-} elseif (Test-DanbooruTagsDir "./comfyui-good-anima/danbooru-tags") {
-  (Resolve-Path "./comfyui-good-anima/danbooru-tags").Path
 } elseif ($found = Find-DanbooruTagsDirFromSkills ".") {
   $found
 } else {
