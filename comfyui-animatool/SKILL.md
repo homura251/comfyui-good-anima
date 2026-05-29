@@ -66,7 +66,7 @@ description: Use for Anima / ComfyUI-AnimaTool image generation. Route Anima gen
 
 ## 必须先做的 tag 校验
 
-生图前先写一个最多 4 项的检索计划，然后按 `danbooru-tags` skill 的批量入口一次取回结果。Shell 下必须使用 `--batch-file`，不要内联多行 `--batch-json`。
+生图前先写一个最多 4 项的检索计划，然后按 `danbooru-tags` skill 的批量入口一次取回结果。Shell 下优先使用 `--batch-stdin`，不要内联多行 `--batch-json`。
 
 ### 画师称呼解析
 

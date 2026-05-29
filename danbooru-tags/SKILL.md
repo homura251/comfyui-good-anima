@@ -24,23 +24,18 @@ description: Search and validate Anima-compatible Danbooru tags, artists, charac
 
 ## 执行入口
 
-默认优先 Rust CLI。必须从当前宿主的本 skill 目录执行，不要从其他 skill 目录找 `bin`。
+默认使用 Rust CLI。把当前 `danbooru-tags` skill 目录作为工作目录，然后调用 `.\bin\danbooru-tags.exe`。不要从其他 skill 目录找 `bin`，不要写死用户名、平台目录或绝对路径。
 
-> 路径解析：执行下方 PowerShell 脚本，自动搜索 `skills/` 容器定位本目录。脚本失败时设置 `$env:DANBOORU_TAGS_DIR`。
+模型已读取本 `SKILL.md` 时，直接使用本文件所在目录：
 
-`DANBOORU_TAGS_DIR` 是包含 `SKILL.md` 与 `tags_index.sqlite` 或 `anima-1.0.csv` 的目录；执行查询时还必须存在 `bin/danbooru-tags.exe`。路径解析规则：
+```powershell
+Set-Location -LiteralPath "<当前 danbooru-tags skill 目录>"
+.\bin\danbooru-tags.exe --group artist --prefix "@mignon" --limit 5 --for-prompt --json --compact
+```
 
-1. 已读取本 `SKILL.md` 时，优先使用该文件所在目录。
-2. 已在 skill 目录中执行命令时，优先使用当前目录。
-3. 自动化脚本可显式设置环境变量 `DANBOORU_TAGS_DIR`。
-4. 从通用 Agent Skills 安装环境启动时，可从当前目录向上查找任意 `skills/` 容器，再定位 `danbooru-tags`。
-5. 不要写死用户名或任何 agent 平台安装目录。
-6. 首次运行从当前已加载 skill 的根目录（即 `$env:SKILL_RUNTIME_ROOT` 或 `skills/` 容器目录）下查找 `danbooru-tags`，找到后 `cd` 进入。
+如果无法从上下文确定本文件所在目录，停止并说明“无法确定 danbooru-tags skill 目录”；不要递归搜索全盘。
 
-找到目录后执行路径发现脚本：
-执行 `. .\bin\setup-dir.ps1`。必须 dot-source 调用，让 `$DANBOORU_TAGS_DIR` 和 `$DANBOORU_RUNTIME_DIR` 留在当前会话。
-
-生图前多锚点检索优先用批量入口。Shell 下复杂 batch JSON 必须写入文件，避免内联 JSON 被拆坏：
+生图前多锚点检索优先用批量入口。优先用 `--batch-stdin`，避免临时文件和 PowerShell 5.x UTF-8 BOM 问题：
 
 ```powershell
 @'
@@ -51,11 +46,31 @@ description: Search and validate Anima-compatible Danbooru tags, artists, charac
     {"id": "artist", "group": "artist", "prefix": "@mignon", "limit": 5}
   ]
 }
-'@ | Set-Content -LiteralPath .\batch_tags.json -Encoding utf8
+'@ | .\bin\danbooru-tags.exe --batch-workers 8 --batch-stdin --for-prompt --json --compact
+```
+
+需要落盘复查时再用 `--batch-file`。写文件必须使用无 BOM UTF-8：
+
+```powershell
+@'
+{
+  "queries": [
+    {"id": "character", "group": "character", "keyword": "kanade tachibana", "limit": 5},
+    {"id": "series", "group": "series", "keyword": "angel beats", "limit": 5},
+    {"id": "artist", "group": "artist", "prefix": "@mignon", "limit": 5}
+  ]
+}
+'@ | ForEach-Object {
+  [System.IO.File]::WriteAllText(
+    (Join-Path (Get-Location) "batch_tags.json"),
+    $_,
+    [System.Text.UTF8Encoding]::new($false)
+  )
+}
 .\bin\danbooru-tags.exe --batch-workers 8 --batch-file .\batch_tags.json --for-prompt --json --compact
 ```
 
-PowerShell 7.x 使用 `Set-Content -Encoding utf8`；只能确认 Windows PowerShell 5.x 时，使用 `[System.IO.File]::WriteAllText(..., [System.Text.UTF8Encoding]::new($false))` 写入无 BOM UTF-8。
+新版 CLI 会兼容 UTF-8 BOM；仍建议写无 BOM UTF-8，保证旧 exe 或其他 JSON 工具也能读取。
 
 批量输出按 `results.<id>.confirmed_tags` / `results.<id>.candidate_tags` 读取，`missing` 表示查不到，直接交给 `nltags`。不要把完整 JSON 复述给用户。
 
@@ -81,11 +96,11 @@ PowerShell 7.x 使用 `Set-Content -Encoding utf8`；只能确认 Windows PowerS
 
 | 场景                     | 调用方式                                                         | 是否生图                  |
 | ------------------------ | ---------------------------------------------------------------- | ------------------------- |
-| 查标签/角色/作品/画师    | `bin\danbooru-tags.exe --group ...`                              | 否                        |
-| 只要随机画师串           | `bin\danbooru-tags.exe --random N --json`                        | 否                        |
-| 随机角色/服装/场景等候选 | `bin\danbooru-tags.exe --random N --group <group> --json`        | 否                        |
-| 生图前回填锚点           | `--batch-file` 一次查多项                                        | 由 comfyui-animatool 决定 |
-| 随机画师生图             | `bin\danbooru-tags.exe --random 5 --for-prompt --json --compact` | 由 comfyui-animatool 决定 |
+| 查标签/角色/作品/画师    | `.\bin\danbooru-tags.exe --group ...`                              | 否                        |
+| 只要随机画师串           | `.\bin\danbooru-tags.exe --random N --json`                        | 否                        |
+| 随机角色/服装/场景等候选 | `.\bin\danbooru-tags.exe --random N --group <group> --json`        | 否                        |
+| 生图前回填锚点           | `--batch-stdin` 一次查多项                                         | 由 comfyui-animatool 决定 |
+| 随机画师生图             | `.\bin\danbooru-tags.exe --random 5 --for-prompt --json --compact` | 由 comfyui-animatool 决定 |
 
 ## 随机画师规则
 
@@ -208,7 +223,9 @@ PowerShell 7.x 使用 `Set-Content -Encoding utf8`；只能确认 Windows PowerS
 ## 常用命令
 
 ```powershell
-.\bin\danbooru-tags.exe --batch-workers 8 --batch-file .\batch_tags.json --for-prompt --json --compact
+@'
+{"queries":[{"id":"artist","group":"artist","prefix":"@mignon","limit":5}]}
+'@ | .\bin\danbooru-tags.exe --batch-workers 8 --batch-stdin --for-prompt --json --compact
 .\bin\danbooru-tags.exe --group artist --prefix "@dair" --limit 5 --for-prompt --json --compact
 .\bin\danbooru-tags.exe --random 10 --json
 .\bin\danbooru-tags.exe --random 20 --group clothing --json

@@ -53,7 +53,7 @@ Anima is trained on the Danbooru tagging system — precise control requires usi
 | **Character lookup**  | "立华奏" in Danbooru is `kanade tachibana` — AI might guess wrong | `--group character --keyword "kanade tachibana"` hits precisely |
 | **Tag accuracy**      | "巫女服" is not a valid Danbooru tag                              | Decompose into `miko`, `hakama`, `wide sleeves` candidates      |
 | **Random selection**  | Can't randomly pick from valid tags                               | `--random N --json` returns candidates; generation fill uses `--random 5 --for-prompt` |
-| **Batch queries**     | One query per tag, slow and inefficient                           | `--batch-file` handles 12-16 queries at once, 8 threads         |
+| **Batch queries**     | One query per tag, slow and inefficient                           | `--batch-stdin` handles 12-16 queries at once, 8 threads        |
 
 #### How it works
 
@@ -66,7 +66,7 @@ tags_index.sqlite (fast local index)
        ↓
  bin/danbooru-tags.exe (Rust CLI)
        ↓
- AI agent queries via --group / --random / --batch-file
+ AI agent queries via --group / --random / --batch-stdin
  obtains confirmed_tags / candidate_tags for prompt assembly
 ```
 
@@ -338,8 +338,7 @@ comfyui-good-anima/
 └── danbooru-tags/                          # 🏷️ Tag retriever
     ├── SKILL.md
     ├── bin/
-    │   ├── danbooru-tags.exe               # Rust CLI (pre-compiled)
-    │   └── setup-dir.ps1
+    │   └── danbooru-tags.exe               # Rust CLI (pre-compiled)
     ├── anima-1.0.csv                       # Main tag index
     ├── tags_index.sqlite                   # SQLite index (pre-built)
     ├── tags_index.json                     # JSON index (pre-built)

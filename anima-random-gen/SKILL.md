@@ -25,7 +25,7 @@ description: Generate randomized but Anima-compliant image parameters after comf
 
 ## 随机检索入口
 
-随机画师与锚点确认必须调用 `danbooru-tags.exe`，并遵循 `danbooru-tags` skill 的执行入口、`--batch-file` 和随机数量规则：
+随机画师与锚点确认必须调用 `danbooru-tags.exe`，并遵循 `danbooru-tags` skill 的执行入口、`--batch-stdin` 和随机数量规则：
 
 ```powershell
 .\bin\danbooru-tags.exe --random 5 --for-prompt --json --compact

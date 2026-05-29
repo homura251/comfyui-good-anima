@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.2 — Danbooru CLI 入口精简与批量输入修复 (2026-05-30)
+
+- `danbooru-tags.exe` 增加 `--batch-stdin`，批量检索可直接从 stdin 读取 JSON。
+- `danbooru-tags.exe` 兼容 UTF-8 BOM，降低 Windows PowerShell 写入 JSON 时的解析失败风险。
+- `danbooru-tags` skill 默认从当前 skill 目录直接调用 `bin/danbooru-tags.exe`，不再依赖路径发现脚本。
+- 删除 `danbooru-tags/bin/setup-dir.ps1`，避免 ExecutionPolicy 阻断主流程。
+- README / README_EN / 相关 skills 的批量检索说明统一改为 `--batch-stdin` 优先；`--batch-file` 仅保留为落盘复查备选。
+
 ## v0.3.0 — 技能集群全面质量审查修复 (2026-05-29)
 
 ### 旧版修复 (comfyui-good-anima/)
