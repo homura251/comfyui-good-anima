@@ -8,6 +8,7 @@
 - 删除 `danbooru-tags/bin/setup-dir.ps1`，避免 ExecutionPolicy 阻断主流程。
 - README / README_EN / 相关 skills 的批量检索说明统一改为 `--batch-stdin` 优先；`--batch-file` 仅保留为落盘复查备选。
 - `comfyui-manager` 默认从当前 `workspace` 目录运行，删除 `workspace/setup-workspace.ps1` 路径发现脚本。
+- `run_workflow_args.js` 兼容 args JSON 的 UTF-8 BOM，并增加 `validate` 模式；批量提交示例改为先验证、再用非阻塞 `submit` 入队并保存 job manifest。
 
 ## v0.3.0 — 技能集群全面质量审查修复 (2026-05-29)
 

@@ -64,7 +64,15 @@ comfyui-skill --dir "$WORKSPACE"
 
 ## PowerShell 与运行产物
 
-写入 args / batch JSON 时默认使用 PowerShell 7 UTF-8 no BOM（`Set-Content -Encoding utf8`）。当前终端不是 PS7 时，用 `pwsh.exe -NoProfile -Command` 启动子进程。只有两种方式都不可用，才退到 PS5 + BOM。禁止不查版本就假设 PS5。
+写入 args / batch JSON 必须使用无 BOM UTF-8。优先用下方函数；不要在 Windows PowerShell 5.x 用 `Set-Content -Encoding utf8` 写 JSON。
+
+```powershell
+function Write-JsonForCli($Path, $Value) {
+  $json = $Value | ConvertTo-Json -Depth 30
+  $fullPath = [System.IO.Path]::GetFullPath($Path)
+  [System.IO.File]::WriteAllText($fullPath, $json, [System.Text.UTF8Encoding]::new($false))
+}
+```
 
 运行产物不要写入 skill 目录。临时 args、批量 args、输出图片、缓存和历史统一放到 `$RUNTIME`。
 
@@ -308,14 +316,49 @@ Anima 本地缓存规则：每次成功执行 Anima 生图后，除了返回 `ou
 ```powershell
 Push-Location "$WORKSPACE"
 $jobs = Get-Content -LiteralPath .\batch_jobs.json -Raw | ConvertFrom-Json
-$ids = @()
-foreach ($job in $jobs) {
-  $argsFile = ".\batch_args\$($job.id).json"
-  $job.args | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath "$argsFile" -Encoding utf8
-  $result = node .\run_workflow_args.js submit local/anima-txt2img-aesthetic-lora $argsFile | ConvertFrom-Json
-  $ids += $result.prompt_id
+$argsDir = Join-Path $RUNTIME "batch_args"
+New-Item -ItemType Directory -Force -Path $argsDir | Out-Null
+
+function Write-JsonForCli($Path, $Value) {
+  $json = $Value | ConvertTo-Json -Depth 30
+  [System.IO.File]::WriteAllText($Path, $json, [System.Text.UTF8Encoding]::new($false))
 }
-$ids
+
+function Submit-AnimaJob($ArgsFile) {
+  $output = node .\run_workflow_args.js submit local/anima-txt2img-aesthetic-lora $ArgsFile
+  if ($LASTEXITCODE -ne 0) { throw "submit failed: $ArgsFile" }
+  return ($output | ConvertFrom-Json)
+}
+
+$workflowId = "local/anima-txt2img-aesthetic-lora"
+$manifest = @()
+$files = foreach ($job in $jobs) {
+  $argsFile = Join-Path $argsDir "$($job.id).json"
+  Write-JsonForCli $argsFile $job.args
+  [pscustomobject]@{ job_id = $job.id; args_file = $argsFile }
+}
+
+foreach ($file in $files) {
+  node .\run_workflow_args.js validate $workflowId $file.args_file
+  if ($LASTEXITCODE -ne 0) { throw "validation failed: $($file.args_file)" }
+}
+
+foreach ($file in $files) {
+  $result = Submit-AnimaJob $file.args_file
+  $promptId = if ($result.prompt_id) { $result.prompt_id } elseif ($result.data.prompt_id) { $result.data.prompt_id } else { $null }
+  if (-not $promptId) { throw "submit succeeded but prompt_id was missing: $($file.args_file)" }
+  $manifest += [pscustomobject]@{
+    job_id = $file.job_id
+    workflow_id = $workflowId
+    args_file = $file.args_file
+    prompt_id = $promptId
+  }
+}
+
+if ($manifest.Count -eq 0) { throw "no jobs were submitted" }
+Write-JsonForCli (Join-Path $RUNTIME "batch_manifest.json") $manifest
+comfyui-skill --json --dir "$WORKSPACE" queue list
+Pop-Location
 ```
 
 `batch_jobs.json` 结构建议：
@@ -353,6 +396,9 @@ Push-Location "$WORKSPACE"; node .\run_workflow_args.js run local/workflow_id .\
 
 # 非阻塞提交（立即返回 prompt_id）
 Push-Location "$WORKSPACE"; node .\run_workflow_args.js submit local/workflow_id .\args.json
+
+# 参数预验证（不入队）
+Push-Location "$WORKSPACE"; node .\run_workflow_args.js validate local/workflow_id .\args.json
 
 # 检查执行状态
 comfyui-skill --json --dir "$WORKSPACE" status <prompt_id>
@@ -498,7 +544,7 @@ node .\run_workflow_args.js run local/txt2img .\args.json
 
 ## Windows PowerShell 注意事项
 
-- 推荐把参数写入 JSON 文件，再用 `node .\run_workflow_args.js run|submit <workflow_id> <args_json_file>` 执行。该脚本用 `spawn` 的 argv 数组传参，并会先把 JSON minify，避免 shell 把换行、空格、引号拆成额外 CLI 参数。
+- 推荐把参数写入 JSON 文件，再用 `node .\run_workflow_args.js run|submit|validate <workflow_id> <args_json_file>` 执行。该脚本兼容 UTF-8 BOM，用 `spawn` 的 argv 数组传参，并会先把 JSON minify，避免 shell 把换行、空格、引号拆成额外 CLI 参数。
 - 不推荐在 PowerShell 里使用 `--args="$(Get-Content ...)"`、`--args=$argsJson` 或内联复杂 JSON；转义容易破坏 prompt 中的引号、反斜杠、换行和空格，常见错误是 `Got unexpected extra arguments`。
 - `comfyui-skill` 当前没有 `--args-file`，所以不要让 agent 尝试该参数；用本 workspace 的 `run_workflow_args.js` 代替。
 - 如果需要 `--priority` 等额外参数，放在 JSON 文件路径之后，例如：`node .\run_workflow_args.js run local/anima-txt2img-aesthetic-lora .\args_anima.json --priority -1`。不要为了额外参数回退到 PowerShell 内联 `--args`。

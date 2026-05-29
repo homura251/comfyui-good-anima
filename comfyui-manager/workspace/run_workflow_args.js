@@ -3,14 +3,15 @@ const fs = require('fs');
 const path = require('path');
 
 function usage() {
-  console.error('Usage: node run_workflow_args.js <run|submit> <workflow_id> <args_json_file> [extra_comfyui_skill_args...]');
+  console.error('Usage: node run_workflow_args.js <run|submit|validate> <workflow_id> <args_json_file> [extra_comfyui_skill_args...]');
   console.error('Example: node run_workflow_args.js run local/anima-txt2img-aesthetic-lora args/job_01.json');
   console.error('Example: node run_workflow_args.js submit local/anima-txt2img-aesthetic-lora args/job_01.json --priority -1');
+  console.error('Example: node run_workflow_args.js validate local/anima-txt2img-aesthetic-lora args/job_01.json');
 }
 
 const [, , mode, workflowId, argsFile, ...extraArgs] = process.argv;
 
-if (!mode || !workflowId || !argsFile || !['run', 'submit'].includes(mode)) {
+if (!mode || !workflowId || !argsFile || !['run', 'submit', 'validate'].includes(mode)) {
   usage();
   process.exit(2);
 }
@@ -41,7 +42,7 @@ function resolveRuntimeFromConfig() {
   const configPath = path.join(workspace, 'config.json');
   if (!fs.existsSync(configPath)) return '';
   try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const config = readJsonFile(configPath);
     const server = Array.isArray(config.servers) ? config.servers.find((item) => item && item.output_dir) : null;
     if (!server) return '';
     const outputDir = path.resolve(workspace, server.output_dir);
@@ -53,6 +54,14 @@ function resolveRuntimeFromConfig() {
   } catch {
     return '';
   }
+}
+
+function stripBom(text) {
+  return text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+}
+
+function readJsonFile(filePath) {
+  return JSON.parse(stripBom(fs.readFileSync(filePath, 'utf8')));
 }
 
 function findExistingRuntimeRoot(start, runtimeName) {
@@ -104,16 +113,21 @@ function moveGeneratedHistory(workflowIdValue) {
 
 let argsJson;
 try {
-  argsJson = JSON.stringify(JSON.parse(fs.readFileSync(resolvedArgsFile, 'utf8')));
+  argsJson = JSON.stringify(readJsonFile(resolvedArgsFile));
 } catch (error) {
   console.error(`[run_workflow_args] Failed to read/parse args JSON: ${resolvedArgsFile}`);
   console.error(error && error.message ? error.message : String(error));
   process.exit(1);
 }
 
+const comfyMode = mode === 'validate' ? 'run' : mode;
+const comfyArgs = ['--json', comfyMode, workflowId];
+if (mode === 'validate') comfyArgs.push('--validate');
+comfyArgs.push(`--args=${argsJson}`, ...extraArgs);
+
 const child = spawn(
   'comfyui-skill',
-  ['--json', mode, workflowId, `--args=${argsJson}`, ...extraArgs],
+  comfyArgs,
   {
     cwd: workspace,
     stdio: 'inherit',
@@ -122,10 +136,12 @@ const child = spawn(
 );
 
 child.on('close', (code) => {
-  try {
-    moveGeneratedHistory(workflowId);
-  } catch (error) {
-    console.error(`[run_workflow_args] Failed to move generated history to runtime: ${error && error.message ? error.message : String(error)}`);
+  if (mode !== 'validate') {
+    try {
+      moveGeneratedHistory(workflowId);
+    } catch (error) {
+      console.error(`[run_workflow_args] Failed to move generated history to runtime: ${error && error.message ? error.message : String(error)}`);
+    }
   }
   process.exit(code ?? 1);
 });
