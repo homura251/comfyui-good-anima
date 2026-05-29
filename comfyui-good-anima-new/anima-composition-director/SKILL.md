@@ -9,9 +9,7 @@ Use this skill before every final Anima prompt assembly initiated by `comfyui-an
 
 For standalone non-generation tasks, use it only when the user asks for composition, camera, lighting, canvas choice, or reference-image layout transfer.
 
-本文件包含核心构图与画布决策规则。references/ 提供扩展细节和进阶示例。
-
-参考图只用于构图时，读取本文件的"Reference image transfer"短节；不要复制角色、服装、配色、道具或场景。
+参考图只用于构图时，读取 ## Reference image transfer 节；不要复制角色、服装、配色、道具或场景。
 
 ## Goal
 
@@ -65,8 +63,6 @@ For a simple one-character request with no fixed size, no reference image, no co
 - Composition: `subject centered with clean background separation`
 - Lighting: `soft frontal or window light`
 - Focus: `face sharp and readable, background softly blurred`
-
-For all other scenes, follow the rules below.
 
 ## Layout modes
 

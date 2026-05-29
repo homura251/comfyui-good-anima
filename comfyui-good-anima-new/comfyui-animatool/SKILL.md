@@ -7,8 +7,6 @@ description: Use for Anima / ComfyUI-AnimaTool image generation intent. Route im
 
 本 skill 是 Anima 生图策略入口：判断分支、组织视觉决策、校验必要 hard anchors、组装 prompt 和 workflow args。它不直接维护 ComfyUI 服务器，也不执行工作流。
 
-本文件包含核心执行规则。references/ 提供批量策略、参考图处理细节和扩展示例。
-
 > **路径解析**：引用的 `another-skill/SKILL.md` 路径均相对于当前 skill 所在父目录（即 `comfyui-good-anima-new/`）。直接按路径读取，不要搜索文件名定位。
 
 ## 触发与不触发
@@ -32,11 +30,7 @@ description: Use for Anima / ComfyUI-AnimaTool image generation intent. Route im
 
 ## 生图分支
 
-1. 普通生图：先读取并使用 `anima-composition-director` 形成视觉简报，再用 `danbooru-tags` 校验角色/作品/最终画师，以及用户指定或抽取出的画风、服装、姿势、场景、光影、可标签化外观锚点；组装 args 后做冲突检查，交给 `comfyui-manager` 执行。
-2. 随机图 / roll / 抽卡：先确认随机生图意图，再读取 `anima-random-gen` 产出参数，复核后交给 `comfyui-manager`。
-3. 随机画师并生图：用 `danbooru-tags --random 5 --for-prompt --json --compact` 取 1 个画师，再组装 args。
-4. 多画师融合 / artist mixer：读取 `references/batch-strategy.md`，使用 Artist Mixer 工作流；普通“分别用 A/B 出图”不是融合。
-5. 用户明确“全 Danbooru tag / 纯 tag / 不加自然语言”：只写 tag，不写 `nltags`。
+读取 anima-composition-director 形成视觉简报 → danbooru-tags 校验锚点 → 组装 args → 冲突检查 → 交接 comfyui-manager。 2. 随机图 / roll / 抽卡：先确认随机生图意图，再读取 `anima-random-gen` 产出参数，复核后交给 `comfyui-manager`。 3. 随机画师并生图：用 `danbooru-tags --random 5 --for-prompt --json --compact` 取 1 个画师，再组装 args。 4. 多画师融合 / artist mixer：读取 `references/batch-strategy.md`，使用 Artist Mixer 工作流；普通“分别用 A/B 出图”不是融合。 5. 用户明确“全 Danbooru tag / 纯 tag / 不加自然语言”：只写 tag，不写 `nltags`。
 
 ## 生图前视觉简报
 
@@ -67,7 +61,6 @@ description: Use for Anima / ComfyUI-AnimaTool image generation intent. Route im
 - `width` / `height` 来自构图计划，不来自固定默认值。
 - `nltags` 至少包含主体位置、景别/镜头、光源方向、焦点/景深中的 2-4 句。
 - 单人、头像、半身、角色图默认保护脸部可读性。
-- 不允许只写 tag 串后直接提交，除非用户明确要求“纯 tag / 不加自然语言”。
 
 ## 必查与少查
 
@@ -152,9 +145,7 @@ hard anchors 放可被 Danbooru 稳定控制的内容：
 
 同一语义不要在 tags 和 `nltags` 中冲突。Anima 有 tag dropout 训练，不需要塞满所有相关 tag；优先少量硬锚点 + 清晰自然语言补足。
 
-普通生图最多 4 个语义锚点；每个锚点最多 2-3 个变体；总 query 控制在 12-16 内。缺失项写入 `nltags`。
-
-普通生图最多 1 次批量查询 + 1 次关键补查；超过后把缺失内容写进 `nltags`，不要反复查询。
+检索锚点数量遵循 danbooru-tags 限制。
 
 ## Prompt 默认结构
 
@@ -217,7 +208,7 @@ Anima 官方支持 prompt weighting；官方示例为 `(chibi:2)`。默认不要
 
 ## `nltags` 画面控制规则
 
-自然语言只写画面控制指令。目标是决定"画什么、怎么摆、光从哪来、镜头怎么拍"。
+只写画面控制：pose, placement, camera, lighting, depth。
 
 - 默认 2–4 句；复杂构图最多 5 句。
 - 单句尽量 8–18 个英文词，最多约 25 个词。
@@ -227,7 +218,7 @@ Anima 官方支持 prompt weighting；官方示例为 `(chibi:2)`。默认不要
 - 不写"debut volume cover / title text placement"这类出版设计说明，除非用户明确要求文字排版。
 - 不要把同一语义在 tags 与 `nltags` 重复扩写。
 - 背景不是主体时，默认用轻微背景虚化或景深分离主体；背景本身是重点时，只说明层级和景深落点。
-- 写法优先使用直接控制句：`Place her full body slightly right of center.` / `Use a low front camera angle.` / `Keep her face sharp and undistorted.`
+- 写法优先使用直接控制句：`Place her full body slightly right of center.` / `Use a low front camera angle.`
 
 ## 默认参数
 
