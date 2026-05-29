@@ -7,7 +7,7 @@ description: Manage ComfyUI server, models, workflows, LoRAs, queues, dependenci
 
 ## 与本 skill 的关系定位
 
-**使用原则**：
+使用原则：
 
 - Anima prompt、tag、画布、steps、批量意图由 `comfyui-animatool` 决定。
 - 本 skill 只执行已确定 args，并管理服务器、模型、workflow、队列、依赖、日志和 history。
@@ -544,7 +544,7 @@ JSON 输出的典型结构：
 
 ## 工作流执行参数格式
 
-⚠️ **args 文件格式**：必须是纯参数对象，不要包裹 `{ "workflow": "...", "args": { ... } }`。`run_workflow_args.js` 已通过命令参数接收 workflow id，args 文件只负责参数本身。本规则是 args 格式的唯一权威说明。
+args 文件格式：必须是纯参数对象，不要包裹 `{ "workflow": "...", "args": { ... } }`。`run_workflow_args.js` 已通过命令参数接收 workflow id，args 文件只负责参数本身。本规则是 args 格式的唯一权威说明。
 
 `--args` 参数接受 JSON 字符串。不同工作流有不同的参数 schema。先用 `info` 查看工作流的参数定义：
 
@@ -559,7 +559,7 @@ Push-Location "$WORKSPACE"
 node .\run_workflow_args.js run local/txt2img .\args.json
 ```
 
-**Windows PowerShell 注意事项**：
+## Windows PowerShell 注意事项
 
 - 推荐把参数写入 JSON 文件，再用 `node .\run_workflow_args.js run|submit <workflow_id> <args_json_file>` 执行。该脚本用 `spawn` 的 argv 数组传参，并会先把 JSON minify，避免 shell 把换行、空格、引号拆成额外 CLI 参数。
 - 不推荐在 PowerShell 里使用 `--args="$(Get-Content ...)"`、`--args=$argsJson` 或内联复杂 JSON；转义容易破坏 prompt 中的引号、反斜杠、换行和空格，常见错误是 `Got unexpected extra arguments`。
@@ -568,20 +568,20 @@ node .\run_workflow_args.js run local/txt2img .\args.json
 
 ## 与 comfyui-animatool 协作示例
 
-**场景：用户想换一个 LoRA 然后生成图片**
+场景：用户想换一个 LoRA 然后生成图片
 
 1. 本 skill 查可用 LoRA → `comfyui-skill --json --dir "$WORKSPACE" models list loras`
 2. 告诉用户有哪些 LoRA 可选
 3. 当前默认 Anima 工作流的美学 LoRA 是固定节点，不通过普通 args 切换
 4. 若要更换 LoRA，复制/编辑工作流或新增暴露 LoRA 参数的 schema，再执行对应 workflow
 
-**场景：显存不够，需要清理**
+场景：显存不够，需要清理
 
 1. 先查状态 → `comfyui-skill --json --dir "$WORKSPACE" server stats`
 2. 释放显存 → `comfyui-skill --dir "$WORKSPACE" free --models`
 3. 再确认释放效果 → `comfyui-skill --json --dir "$WORKSPACE" server stats`
 
-**场景：导入并使用新的 FLUX 工作流**
+场景：导入并使用新的 FLUX 工作流
 
 1. 导入 → `comfyui-skill --json --dir "$WORKSPACE" workflow import "<path-to-flux.json>" --check-deps`
 2. 查看参数 → `comfyui-skill --json --dir "$WORKSPACE" info local/flux`
@@ -628,6 +628,6 @@ try {
 ## 常见问题
 
 1. **"No 'config.json' or 'data/' folder found"** → 确保在 WORKSPACE 目录运行命令
-2. **Connection refused** → ComfyUI 服务器未启动，先启动 ComfyUI
-3. **400 / Bad Request / invalid prompt** → 按“400 Bad Request 诊断”处理
-4. **server stats 显示高 VRAM** → 用 `comfyui-skill free --models` 释放
+2. Connection refused → 启动 ComfyUI（见 §环境适配检查）
+3. 400 / Bad Request → 见 §400 Bad Request 诊断
+4. VRAM 高 → comfyui-skill free --models（见 §服务器管理）

@@ -144,12 +144,10 @@ PowerShell 7.x 使用 `Set-Content -Encoding utf8`；只能确认 Windows PowerS
 - 不要调用 10 次 `--random 5 --for-prompt --json`。
 - `--for-prompt` 是生图回填模式，会故意只返回 1 个画师，避免把长画师串塞进 prompt。
 - 从候选中选画师时，最多选 1 个；用户明确要求混合风格时最多 2 个。
-- 随机 tag 候选不使用 `--for-prompt`；先抽候选，再由模型按兼容性筛选。
-- CLI 只负责提供随机候选；不明确适合随机检索的需求，应由 `comfyui-animatool` 先澄清或转为自然语言控制。
+- 随机画师筛选优先使用当前结果中的 `count`；只有用户明确要求覆盖门槛时才补查。
 
 候选预算与 `count`：
 
-- 随机候选池只供模型内部筛选；最终只使用筛出的少量结果，通常展示 1–5 个关键选择，不复述完整 JSON。
 - `count` 是训练覆盖与稳定性参考，不是默认硬门槛；不要默认加 `--min-count`。
 - 只有用户明确要求高覆盖、高稳定或指定图量门槛时，才使用 `--min-count`。
 - 随机画师筛选优先使用当前结果中的 `count`；只有用户明确要求覆盖门槛时才补查。
@@ -193,7 +191,6 @@ PowerShell 7.x 使用 `Set-Content -Encoding utf8`；只能确认 Windows PowerS
 - 中文、日文俗称先翻译/转写成 Danbooru 常用英文或罗马音，再查询；中文原词只能作为辅助变体。
 - 对可能被 group 白名单漏掉的概念，同一 batch 可同时放 `group=...` 与 `category=general` 变体。
 - 普通生图最多 4 个语义锚点；每个锚点最多 2–3 个变体；总 query 控制在 12–16 内。
-- `--compact` 结果只读 JSON 后筛选，不要向用户复述完整检索过程。
 - group 精确过滤无命中时返回的 general 候选只作为 `candidate_tags`；不能当作硬 confirmed 直接批量回填。
 
 示例：用户说“巫女服”，不要只查 `group=clothing keyword=巫女服`。一次 batch 查询：
@@ -218,24 +215,6 @@ PowerShell 7.x 使用 `Set-Content -Encoding utf8`；只能确认 Windows PowerS
       "group": "clothing",
       "keyword": "hakama",
       "limit": 5
-    },
-    {
-      "id": "miko_sleeves",
-      "group": "clothing",
-      "keyword": "wide sleeves",
-      "limit": 5
-    },
-    {
-      "id": "miko_detached_sleeves",
-      "group": "clothing",
-      "keyword": "detached sleeves",
-      "limit": 5
-    },
-    {
-      "id": "miko_japanese_clothes",
-      "group": "clothing",
-      "keyword": "japanese clothes",
-      "limit": 5
     }
   ]
 }
@@ -257,15 +236,12 @@ PowerShell 7.x 使用 `Set-Content -Encoding utf8`；只能确认 Windows PowerS
 
 ## 回填策略
 
-采用“Danbooru 锚点确认 + nltags 补足”：
-
 1. 角色、作品、画师、基础外观优先查到并回填。
 2. 服装/配饰/动作/场景/光影先查可确认 tag，再筛选。
 3. 若由 `comfyui-animatool` 生图调用，以其最多 4 项批量查询限制为准；场景/光影通常进入 `environment` 或 `nltags`。
 4. 复合短语拆成可确认锚点，例如 `fur-trimmed hooded cape` → `fur trim`、`hood`、`cape`。
 5. 查不到完整组合时不要编 tag，交给 `nltags`：例如 `She wears a fur-trimmed hooded cape and oversized paw gloves.`。
 6. 不要把 `candidate_tags` 整组塞进 prompt。
-7. 不要堆 30+ 个松散 tag；Anima 有 tag dropout 训练，少量硬锚点更稳。
 
 ## 常用命令
 
