@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.4 — submit 非阻塞语义与查询上限澄清 (2026-05-30)
+
+- `comfyui-manager` 明确区分 `run` 与 `submit`：`run` 阻塞等待并返回 `outputs[].local_path`；`submit` 只入队并返回 `prompt_id`、args/manifest 清单。
+- 批量 `submit` 默认不轮询、不等待出图；只有用户明确要求检查完成、查看图片或补建缓存时，才运行 `status` / 后处理管道。
+- `comfyui-animatool` 批量输出改为默认汇总编号、简短主题、`prompt_id` 和 manifest；后处理完成后才汇总 `local_path`。
+- `danbooru-tags` 澄清 `limit 5` 只是精确 artist / character / series 查询默认值；模糊服装、动作、场景或俗称候选可用 `limit 10-20`，最终仍只筛少量锚点回填。
+
 ## v0.3.3 — 构图规则补充与噪音控制 (2026-05-30)
 
 - `anima-composition-director` 增加场景一致性规则，要求姿态、表情、服装、道具、天气和背景服务同一个画面锚点。
