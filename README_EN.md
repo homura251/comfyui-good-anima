@@ -6,6 +6,8 @@
 
 🌐 **[中文版](./README.md)**
 
+![Anima Base v1.0 preview](./samples/anima_base_v1_0-rella-sea-margatroid_marisa_00001_.png)
+
 ---
 
 ## Mainline Features

@@ -4,6 +4,8 @@
 >
 > 🌐 **[English Version](./README_EN.md)**
 
+![Anima Base v1.0 预览图](./samples/anima_base_v1_0-rella-sea-margatroid_marisa_00001_.png)
+
 ---
 
 ## 主线设计目标
